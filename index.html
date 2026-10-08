@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kalendaryo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{
+  background:#08060d;
+  display:grid;
+  place-items:center;
+  font-family:VT323,"Courier New",monospace;
+}
+
+#start{
+  position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:radial-gradient(circle,#33213a 0%,#120d18 55%,#050408 100%);
+}
+#start button{
+  border:1px solid #fff;color:#fff;background:#c92b61;padding:12px 34px;
+  font:22px VT323,"Courier New",monospace;cursor:pointer;
+  box-shadow:0 0 25px #c92b6155;
+}
+
+#screen{
+  position:relative;width:min(100vw,676px);height:min(100vh,576px);
+  aspect-ratio:676/576;overflow:hidden;
+  background:radial-gradient(circle at 50% 50%,#5a4261 0%,#241a2d 45%,#0b0910 78%,#050408 100%);
+}
+
+/* CRT / low-resolution phone-recording feel */
+#screen::before{
+  content:"";position:absolute;inset:0;z-index:20;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.055) 0 1px,transparent 1px 3px);
+  mix-blend-mode:screen;opacity:.42;
+}
+#screen::after{
+  content:"";position:absolute;inset:0;z-index:21;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.38) 100%);
+}
+
+.popup{
+  --w:315px;--h:278px;
+  position:absolute;width:var(--w);height:var(--h);
+  left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
+  border-radius:13px;overflow:hidden;
+  background:rgba(247,245,250,.97);
+  box-shadow:0 0 0 1px rgba(255,255,255,.7),0 18px 50px rgba(0,0,0,.55),0 0 28px rgba(220,117,255,.18);
+  opacity:0;
+  filter:blur(.15px);
+}
+.popup.show{animation:show .5s cubic-bezier(.2,.8,.2,1) forwards}
+.popup.hide{animation:hide .62s ease forwards}
+@keyframes show{from{opacity:0;transform:translate(-50%,-50%) scale(.92)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes hide{from{opacity:1;transform:translate(-50%,-50%) scale(1)}to{opacity:0;transform:translate(-50%,-50%) scale(.98)}}
+
+.title{
+  height:56px;padding:0 13px 0 16px;display:flex;align-items:center;justify-content:space-between;
+  color:#fff;background:linear-gradient(135deg,#df2f68 0%,#c51f59 100%);
+  font-size:23px;line-height:1;text-shadow:1px 1px 0 #8d1641;
+}
+.close{font-family:Arial,sans-serif;font-size:34px;font-weight:300;line-height:1;margin-top:-3px}
+
+.content{height:159px;display:flex;align-items:center;gap:21px;padding:0 35px;background:#f7f5fa}
+.warning{width:45px;height:42px;position:relative;flex:0 0 45px;clip-path:polygon(50% 0,100% 100%,0 100%);background:linear-gradient(145deg,#fff391,#e4b52e);filter:drop-shadow(1px 2px 1px rgba(0,0,0,.18))}
+.warning:after{content:"!";position:absolute;left:18px;top:6px;color:#80631a;font:700 28px Arial,sans-serif}
+#message{color:#77717d;font-size:22px;letter-spacing:.2px;white-space:nowrap;text-shadow:0 1px 0 #fff;opacity:1}
+#message.swap{animation:textSwap .32s ease}
+@keyframes textSwap{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+.footer{height:63px;background:#f7f5fa;display:flex;justify-content:flex-end;align-items:center;padding-right:28px}
+#ok{width:136px;height:43px;background:linear-gradient(#fbfbfb,#eee);border:1px solid #aaa4ae;box-shadow:inset 0 0 0 1px #fff;color:#77717d;font:22px VT323,"Courier New",monospace}
+
+.cursor{
+  position:absolute;z-index:12;width:0;height:0;opacity:0;
+  border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:24px solid #fff;
+  filter:drop-shadow(1px 1px 0 #333);transform:rotate(-42deg);pointer-events:none;
+}
+.cursor.move{animation:cursorMove 1.15s ease-in-out forwards}
+@keyframes cursorMove{
+  0%{opacity:0;left:54%;top:58%;transform:rotate(-42deg)}
+  15%{opacity:1}
+  100%{opacity:1;left:63%;top:70%;transform:rotate(-42deg)}
+}
+
+#credits{position:absolute;right:9px;bottom:7px;z-index:30;color:#fff9;font:12px Arial,sans-serif;opacity:.65}
+
+@media(max-height:500px){.popup{transform:translate(-50%,-50%) scale(.82)}.popup.show{animation:showSmall .5s forwards}.popup.hide{animation:hideSmall .62s forwards}}
+@keyframes showSmall{from{opacity:0;transform:translate(-50%,-50%) scale(.76)}to{opacity:1;transform:translate(-50%,-50%) scale(.82)}}
+@keyframes hideSmall{from{opacity:1;transform:translate(-50%,-50%) scale(.82)}to{opacity:0;transform:translate(-50%,-50%) scale(.8)}}
+</style>
+</head>
+<body>
+
+<div id="start"><button id="startBtn">START</button></div>
+
+<div id="screen">
+  <div id="popup" class="popup">
+    <div class="title"><span>Kalendaryo</span><span class="close">×</span></div>
+    <div class="content"><div class="warning"></div><div id="message">Ibalik ang kalendaryo</div></div>
+    <div class="footer"><button id="ok">OK</button></div>
+  </div>
+  <div id="cursor" class="cursor"></div>
+  <div id="credits"></div>
+</div>
+
+<!-- The audio was extracted from the uploaded reference video. -->
+<audio id="audio" preload="auto" src="sound.mp3"></audio>
+
+<script>
+const messages = [
+  {t:0.00, text:"Ibalik ang kalendaryo"},
+  {t:5.10, text:"kalendaryo"},
+  {t:6.55, text:"Sa mga araw na ako"},
+  {t:9.25, text:"nasa iyo"},
+  {t:12.45, text:"Pagbigyan kahit"},
+  {t:15.55, text:"isang minuto"},
+  {t:18.55, text:"Ibalik"},
+  {t:21.10, text:"pabalik"}
+];
+
+const popup=document.getElementById('popup');
+const message=document.getElementById('message');
+const cursor=document.getElementById('cursor');
+const audio=document.getElementById('audio');
+const start=document.getElementById('start');
+const startBtn=document.getElementById('startBtn');
+
+let last=-1;
+
+function setMessage(i){
+  if(i===last)return;
+  last=i;
+  message.textContent=messages[i].text;
+  message.classList.remove('swap');
+  void message.offsetWidth;
+  message.classList.add('swap');
+}
+
+function frame(){
+  const t=audio.currentTime;
+  let idx=0;
+  for(let i=0;i<messages.length;i++) if(t>=messages[i].t) idx=i;
+  setMessage(idx);
+
+  if(t>=0 && t<0.55){popup.classList.add('show');popup.classList.remove('hide')}
+  if(t>=28.20){popup.classList.remove('show');popup.classList.add('hide')}
+  if(t>0.7 && t<2.0) cursor.classList.add('move');
+  if(!audio.paused && t<30.75) requestAnimationFrame(frame);
+}
+
+startBtn.addEventListener('click',async()=>{
+  start.style.display='none';
+  last=-1;
+  audio.currentTime=0;
+  try{await audio.play();}catch(e){console.log(e)}
+  popup.classList.remove('hide');
+  popup.classList.add('show');
+  requestAnimationFrame(frame);
+});
+
+audio.addEventListener('ended',()=>{
+  popup.classList.remove('show');
+  popup.classList.add('hide');
+  cursor.classList.remove('move');
+});
+</script>
+</body>
+</html>
